@@ -1,0 +1,178 @@
+:root {
+  --bg: #fff5f8;
+  --surface: #ffffff;
+  --text: #5a4650;
+  --muted: #a08a94;
+  --accent: #ff8fb1;
+  --accent-dark: #e86f95;
+  --line: #f6d6e1;
+  --radius: 20px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Hiragino Maru Gothic ProN", "Hiragino Sans", "Yu Gothic", system-ui, sans-serif;
+  -webkit-text-size-adjust: 100%;
+}
+
+.app {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: max(16px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 100dvh;
+}
+
+.header { text-align: center; }
+.header h1 {
+  margin: 8px 0 0;
+  font-size: 28px;
+  letter-spacing: 0.04em;
+  color: var(--accent-dark);
+}
+.lead { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
+
+.stage {
+  background: var(--surface);
+  border: 2px dashed var(--line);
+  border-radius: var(--radius);
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  /* 透明部分が見えるように市松模様 */
+  background-image:
+    linear-gradient(45deg, #fdf0f4 25%, transparent 25%),
+    linear-gradient(-45deg, #fdf0f4 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #fdf0f4 75%),
+    linear-gradient(-45deg, transparent 75%, #fdf0f4 75%);
+  background-size: 20px 20px;
+  background-position: 0 0, 0 10px, 10px -10px, -10px 0;
+}
+.stage.has-image { border-style: solid; }
+
+.picker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 32px;
+  color: var(--accent-dark);
+  font-weight: bold;
+  cursor: pointer;
+}
+/* display:none だと古いiOSで「写真をかえる」から開けないことがあるため、見えなくするだけにする */
+.file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+.picker-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 36px;
+  line-height: 64px;
+  text-align: center;
+}
+
+.preview {
+  max-width: 100%;
+  max-height: 100%;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.controls {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.control-head {
+  display: flex;
+  justify-content: space-between;
+  font-weight: bold;
+  font-size: 15px;
+}
+.control-head output { color: var(--accent-dark); }
+
+input[type="range"] {
+  width: 100%;
+  margin: 12px 0 4px;
+  accent-color: var(--accent);
+  height: 28px;
+}
+.range-hint {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.actions { display: flex; gap: 12px; }
+
+.btn {
+  flex: 1;
+  border: none;
+  border-radius: 999px;
+  padding: 14px 16px;
+  font: inherit;
+  font-weight: bold;
+  font-size: 16px;
+  cursor: pointer;
+}
+.btn-main { background: var(--accent); color: #fff; }
+.btn-main:active { background: var(--accent-dark); }
+.btn-sub { background: #fde7ee; color: var(--accent-dark); }
+.btn:disabled { opacity: 0.5; }
+
+.fallback {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 16px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.fallback p { margin: 0; font-size: 14px; }
+.fallback img {
+  width: 100%;
+  image-rendering: pixelated;
+  -webkit-touch-callout: default;
+}
+
+.status {
+  margin: 0;
+  min-height: 1.4em;
+  text-align: center;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.footer {
+  margin-top: auto;
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+[hidden] { display: none !important; }

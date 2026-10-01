@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>pixel kawaii</title>
+  <meta name="description" content="写真をかわいいドット絵に変換します。写真は端末の外に送信されません。">
+  <meta name="theme-color" content="#ffe4ec">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="pixel kawaii">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon-192.png" type="image/png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="app">
+    <header class="header">
+      <h1>pixel kawaii</h1>
+      <p class="lead">写真をドット絵に変換します</p>
+    </header>
+
+    <section class="stage" id="stage">
+      <input type="file" id="fileInput" class="file-input" accept="image/*">
+      <label class="picker" id="picker" for="fileInput">
+        <span class="picker-icon" aria-hidden="true">＋</span>
+        <span>写真をえらぶ</span>
+      </label>
+      <canvas id="preview" class="preview" hidden></canvas>
+    </section>
+
+    <section class="controls" id="controls" hidden>
+      <div class="control">
+        <div class="control-head">
+          <label for="sizeRange">ドットの細かさ</label>
+          <output id="sizeValue">64</output>
+        </div>
+        <input type="range" id="sizeRange" min="16" max="128" step="4" value="64">
+        <div class="range-hint"><span>あらい</span><span>こまかい</span></div>
+      </div>
+
+      <div class="actions">
+        <button type="button" class="btn btn-sub" id="changeBtn">写真をかえる</button>
+        <button type="button" class="btn btn-main" id="saveBtn">保存・共有</button>
+      </div>
+    </section>
+
+    <section class="fallback" id="fallback" hidden>
+      <p>画像を長押しして「"写真"に保存」を選んでください</p>
+      <img id="fallbackImg" alt="変換したドット絵">
+      <button type="button" class="btn btn-sub" id="closeFallback">とじる</button>
+    </section>
+
+    <p class="status" id="status" role="status"></p>
+
+    <footer class="footer">
+      写真は端末の中だけで処理され、外部には送信されません。
+    </footer>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
