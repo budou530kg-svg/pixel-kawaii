@@ -1,5 +1,5 @@
 // ネットにつながっていれば最新版を、オフラインならキャッシュを返す
-const CACHE = 'pixel-kawaii-v2';
+const CACHE = 'pixel-kawaii-v3';
 const ASSETS = [
   './',
   'index.html',

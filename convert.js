@@ -231,13 +231,35 @@ const PixelConvert = (() => {
   }
 
   // ---- 4. 描画（境目の線つき） ----
-  function render(q, { paletteId = 'natural', lines = true } = {}) {
-    const { W, H, lbl, cent } = q;
+  // lineMode: 'luma' = 明るさの差が大きい境目だけ / 'edge' = 色が大きく違う境目すべて
+  // lineDark: 線の濃さ（大きいほど黒に近い） / contrast: 明暗の差を広げる倍率
+  function render(q, { paletteId = 'natural', lines = true, lineMode = 'luma', lineThreshold = 14, lineDark = 38, contrast = 1 } = {}) {
+    const { W, H, lbl } = q;
+    let { cent } = q;
+    if (contrast !== 1) {
+      const mean = cent.reduce((s, c) => s + c[0], 0) / cent.length;
+      cent = cent.map(([L, a, b]) => [Math.max(0, Math.min(100, mean + (L - mean) * contrast)), a, b]);
+    }
     const palette = PALETTES.find((p) => p.id === paletteId) || PALETTES[0];
     const labs = paletteColors(cent, palette);
     const fill = labs.map(([L, a, b]) => lab2rgb(L, a, b));
     // 線は真っ黒ではなく、その色を濃くしたもの（やわらかい印象にする）
-    const line = labs.map(([L, a, b]) => lab2rgb(Math.max(10, L - 38), a * 0.9, b * 0.9));
+    const line = labs.map(([L, a, b]) => lab2rgb(Math.max(8, L - lineDark), a * 0.9, b * 0.9));
+    const labDist = (i, j) => Math.hypot(cent[i][0] - cent[j][0], cent[i][1] - cent[j][1], cent[i][2] - cent[j][2]);
+    const isLine = (me, nb) => {
+      if (nb === me) return false;
+      if (lineMode === 'edge') {
+        // 1ドット幅にするため、暗い側（同じ明るさなら番号の小さい側）だけに線を引く
+        const darker = cent[me][0] < cent[nb][0] || (cent[me][0] === cent[nb][0] && me < nb);
+        return darker && labDist(me, nb) > lineThreshold;
+      }
+      // 明るさの差が大きい境目の、暗い側に線を入れる。
+      // ただし同じ色の濃淡（肌の陰影など）には引かない：色味(a,b)も違うか、明るさが大きく違うときだけ
+      const dL = cent[nb][0] - cent[me][0];
+      if (dL <= lineThreshold) return false;
+      const dAB = Math.hypot(cent[me][1] - cent[nb][1], cent[me][2] - cent[nb][2]);
+      return dAB > 10 || dL > 40;
+    };
     const out = makeCanvas(W, H);
     const ctx = out.getContext('2d');
     const img = ctx.createImageData(W, H);
@@ -251,9 +273,7 @@ const PixelConvert = (() => {
           for (const [dx, dy] of dirs) {
             const xx = x + dx, yy = y + dy;
             if (xx < 0 || yy < 0 || xx >= W || yy >= H) continue;
-            const nb = lbl[yy * W + xx];
-            // 元の写真で明るさが大きく違う境目の、暗い側に線を入れる
-            if (nb !== me && cent[me][0] < cent[nb][0] - 14) {
+            if (isLine(me, lbl[yy * W + xx])) {
               c = line[me];
               break;
             }
@@ -268,12 +288,15 @@ const PixelConvert = (() => {
   }
 
   // 写真（作業用キャンバス）から、長辺 dots ドットの「色まとめ済みデータ」を作る
-  function analyze(work, dots, colors = 16) {
+  // smooth: 陰影を平らにする強さ / passes: 浮いたドットを掃除する回数
+  function analyze(work, dots, { colors = 16, smooth = 2, passes = 1 } = {}) {
     const w = work.width, h = work.height;
     const gw = w >= h ? dots : Math.max(1, Math.round(dots * w / h));
     const gh = w >= h ? Math.max(1, Math.round(dots * h / w)) : dots;
-    const flat = kuwahara(scaleTo(work, gw * 3, gh * 3), 2);
-    return cleanup(quantize(scaleTo(flat, gw, gh), colors));
+    const flat = smooth > 0 ? kuwahara(scaleTo(work, gw * 3, gh * 3), smooth) : work;
+    let q = quantize(scaleTo(flat, gw, gh), colors);
+    for (let i = 0; i < passes; i++) q = cleanup(q);
+    return q;
   }
 
   return { PALETTES, analyze, render };
