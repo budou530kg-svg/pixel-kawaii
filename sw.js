@@ -1,9 +1,10 @@
 // ネットにつながっていれば最新版を、オフラインならキャッシュを返す
-const CACHE = 'pixel-kawaii-v1';
+const CACHE = 'pixel-kawaii-v2';
 const ASSETS = [
   './',
   'index.html',
   'style.css',
+  'convert.js',
   'app.js',
   'manifest.json',
   'icons/icon-192.png',

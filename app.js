@@ -14,6 +14,8 @@ const preview = $('preview');
 const controls = $('controls');
 const sizeRange = $('sizeRange');
 const sizeValue = $('sizeValue');
+const paletteList = $('paletteList');
+const linesToggle = $('linesToggle');
 const changeBtn = $('changeBtn');
 const saveBtn = $('saveBtn');
 const statusEl = $('status');
@@ -21,6 +23,9 @@ const fallback = $('fallback');
 const fallbackImg = $('fallbackImg');
 
 let workCanvas = null; // 縮小済みの元画像
+let analyzed = null;   // 色まとめ済みデータ（ドット数が変わったときだけ作り直す）
+let analyzedDots = 0;
+let paletteId = 'natural';
 let renderQueued = false;
 
 function setStatus(msg) {
@@ -62,39 +67,14 @@ function toWorkCanvas(img) {
   return c;
 }
 
-// 半分ずつ縮小してから目標サイズにする（一気に縮めるとガタつくため）
-function downscale(src, tw, th) {
-  let cur = src;
-  while (cur.width / 2 >= tw && cur.height / 2 >= th) {
-    const next = makeCanvas(Math.round(cur.width / 2), Math.round(cur.height / 2));
-    const ctx = next.getContext('2d');
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
-    ctx.drawImage(cur, 0, 0, next.width, next.height);
-    cur = next;
-  }
-  const out = makeCanvas(tw, th);
-  const ctx = out.getContext('2d');
-  ctx.imageSmoothingEnabled = true;
-  ctx.imageSmoothingQuality = 'high';
-  ctx.drawImage(cur, 0, 0, tw, th);
-  return out;
-}
-
-// 長辺をドット数にしたサイズを返す
-function gridSize(dots) {
-  const w = workCanvas.width;
-  const h = workCanvas.height;
-  if (w >= h) {
-    return { gw: dots, gh: Math.max(1, Math.round(dots * h / w)) };
-  }
-  return { gw: Math.max(1, Math.round(dots * w / h)), gh: dots };
-}
-
 // ドット絵（1ドット=1ピクセル）を作る
 function pixelate() {
-  const { gw, gh } = gridSize(Number(sizeRange.value));
-  return downscale(workCanvas, gw, gh);
+  const dots = Number(sizeRange.value);
+  if (!analyzed || analyzedDots !== dots) {
+    analyzed = PixelConvert.analyze(workCanvas, dots);
+    analyzedDots = dots;
+  }
+  return PixelConvert.render(analyzed, { paletteId, lines: linesToggle.checked });
 }
 
 // ドット絵をにじませずに整数倍で拡大する
@@ -124,18 +104,44 @@ function queueRender() {
   requestAnimationFrame(render);
 }
 
+function buildPalettes() {
+  for (const p of PixelConvert.PALETTES) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'palette';
+    btn.dataset.id = p.id;
+    btn.setAttribute('aria-pressed', String(p.id === paletteId));
+    const sw = document.createElement('span');
+    sw.className = 'swatch';
+    sw.style.background = `linear-gradient(135deg, ${p.swatch[0]} 0 33%, ${p.swatch[1]} 33% 66%, ${p.swatch[2]} 66%)`;
+    const name = document.createElement('span');
+    name.textContent = p.name;
+    btn.append(sw, name);
+    btn.addEventListener('click', () => {
+      paletteId = p.id;
+      for (const b of paletteList.children) b.setAttribute('aria-pressed', String(b.dataset.id === paletteId));
+      queueRender();
+    });
+    paletteList.appendChild(btn);
+  }
+}
+
 async function handleFile(file) {
   if (!file) return;
   setStatus('読み込み中…');
   try {
     const { img, url } = await loadImage(file);
     workCanvas = toWorkCanvas(img);
+    analyzed = null;
     URL.revokeObjectURL(url);
     picker.hidden = true;
     preview.hidden = false;
     controls.hidden = false;
     fallback.hidden = true;
     stage.classList.add('has-image');
+    setStatus('変換中…');
+    // 「変換中…」を表示してから重い処理を始める
+    await new Promise((r) => requestAnimationFrame(() => setTimeout(r, 0)));
     render();
     setStatus('');
   } catch (err) {
@@ -208,12 +214,14 @@ async function save() {
   }
 }
 
+buildPalettes();
 fileInput.addEventListener('change', () => handleFile(fileInput.files[0]));
 changeBtn.addEventListener('click', () => fileInput.click());
 sizeRange.addEventListener('input', () => {
   sizeValue.textContent = sizeRange.value;
   queueRender();
 });
+linesToggle.addEventListener('change', queueRender);
 saveBtn.addEventListener('click', save);
 $('closeFallback').addEventListener('click', () => {
   fallback.hidden = true;
